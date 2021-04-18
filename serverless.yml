@@ -4,6 +4,9 @@ plugins:
   - serverless-webpack
   - serverless-offline
 
+package:
+  individually: true
+
 custom:
   webpack:
     includeModules: true
@@ -40,6 +43,12 @@ functions:
           method: post
           path: groups
           cors: true
+          request:
+            schemas:
+              application/json:
+                schema: ${file(models/create-group-request.json)}
+                name: GroupCreateModel
+                description: Create a new group
 
 resources:
   Resources:
@@ -55,7 +64,7 @@ resources:
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.GROUPS_TABLE}
 
-configValidationMode: error
+# configValidationMode: off
 disabledDeprecations:
   - CLI_OPTIONS_SCHEMA
   - UNSUPPORTED_CLI_OPTIONS
