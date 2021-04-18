@@ -19,6 +19,7 @@ provider:
   region: ${opt:region, 'eu-west-2'}
   environment:
     GROUPS_TABLE: Groups-${self:provider.stage}
+    IMAGES_TABLE: Images-${self:provider.stage}
   iam:
     role:
       statements:
@@ -26,7 +27,12 @@ provider:
           Action:
             - dynamodb:Scan
             - dynamodb:PutItem
+            - dynamodb:GetItem
           Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.GROUPS_TABLE}
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+          Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.IMAGES_TABLE}
 
 functions:
   GetGroups:
@@ -49,6 +55,13 @@ functions:
                 schema: ${file(models/create-group-request.json)}
                 name: GroupCreateModel
                 description: Create a new group
+  GetImages:
+    handler: src/lambda/http/getImages.handler
+    events:
+      - http:
+          method: get
+          path: groups/{groupId}/images
+          cors: true
 
 resources:
   Resources:
@@ -63,6 +76,21 @@ resources:
             KeyType: HASH
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.GROUPS_TABLE}
+    ImagesDynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: groupId
+            AttributeType: S
+          - AttributeName: timestamp
+            AttributeType: S
+        KeySchema:
+          - AttributeName: groupId
+            KeyType: HASH
+          - AttributeName: timestamp
+            KeyType: RANGE
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:provider.environment.IMAGES_TABLE}
 
 # configValidationMode: off
 disabledDeprecations:
