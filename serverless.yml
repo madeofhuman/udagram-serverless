@@ -103,6 +103,11 @@ functions:
                 name: ImageCreateModel
                 description: Create a new image
   SendUploadNotifications:
+    environment:
+      STAGE: ${self:provider.stage}
+      REGION: ${self:provider.region}
+      API_ID:
+        Ref: WebsocketsApi
     handler: src/lambda/s3/sendNotifications.handler
   ConnectHandler:
     handler: src/lambda/websocket/connect.handler
