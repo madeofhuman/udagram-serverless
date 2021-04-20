@@ -10,6 +10,7 @@ package:
 custom:
   webpack:
     includeModules: true
+  topicName: imagesTopic-${self:provider.stage}
 
 provider:
   name: aws
@@ -109,6 +110,16 @@ functions:
       API_ID:
         Ref: WebsocketsApi
     handler: src/lambda/s3/sendNotifications.handler
+    events:
+      - sns:
+          arn:
+            Fn::Join:
+              - ':'
+              - - arn:aws:sns
+                - Ref: AWS::Region
+                - Ref: AWS::AccountId
+                - ${self:custom.topicName}
+          topicName: ${self:custom.topicName}
   ConnectHandler:
     handler: src/lambda/websocket/connect.handler
     events:
@@ -172,9 +183,9 @@ resources:
       Properties:
         BucketName: ${self:provider.environment.IMAGES_S3_BUCKET}
         NotificationConfiguration:
-          LambdaConfigurations:
-            - Event: s3:ObjectCreated:*
-              Function: !GetAtt SendUploadNotificationsLambdaFunction.Arn
+          TopicConfigurations:
+            - Event: s3:ObjectCreated:Put
+              Topic: !Ref ImageTopic
         CorsConfiguration:
           CorsRules:
             -
@@ -253,6 +264,28 @@ resources:
                   aws:SourceIp:
                     - '197.210.64.255/32'
               Resource: !Sub 'arn:aws:es:${self:provider.region}:${AWS::AccountId}:domain/images-search-${self:provider.stage}/*'
+    ImageTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        DisplayName: Image bucket topic
+        TopicName: ${self:custom.topicName}
+    SNSTopicPolicy:
+      Type: AWS::SNS::TopicPolicy
+      Properties:
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                AWS: '*'
+              Action: sns:Publish
+              Resource:
+                !Ref ImageTopic
+              Condition:
+                ArnLike:
+                  AWS:SourceArn: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}
+        Topics:
+          - !Ref ImageTopic
 
 # configValidationMode: off
 disabledDeprecations:

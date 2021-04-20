@@ -1,4 +1,4 @@
-import { S3Handler, S3Event } from 'aws-lambda';
+import { S3Event, SNSHandler, SNSEvent } from 'aws-lambda';
 import 'source-map-support/register';
 import * as AWS from 'aws-sdk';
 
@@ -39,7 +39,7 @@ const sendMessageToClient = async (connectionId: string, payload: Object) => {
   }
 };
 
-export const handler: S3Handler =  async (event: S3Event) => {
+const processS3Event =  async (event: S3Event) => {
   for (const record of event.Records) {
     const key = record.s3.object.key;
     console.log('Processing S3 item with key: ', key);
@@ -56,5 +56,17 @@ export const handler: S3Handler =  async (event: S3Event) => {
       const connectionId = connection.id;
       await sendMessageToClient(connectionId, payload);
     }
+  }
+};
+
+export const handler: SNSHandler = async (event: SNSEvent) => {
+  console.log('Processing SNS event: ', JSON.stringify(event));
+
+  for (const snsRecord of event.Records) {
+    const s3EventStr = snsRecord.Sns.Message;
+    console.log('Processing S3 event: ', s3EventStr);
+    const s3Event = JSON.parse(s3EventStr);
+
+    await processS3Event(s3Event);
   }
 };
