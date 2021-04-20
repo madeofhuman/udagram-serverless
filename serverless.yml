@@ -120,6 +120,8 @@ functions:
       - websocket:
           route: $disconnect
   SyncWithElasticsearch:
+    environment:
+      ES_ENDPOINT: !GetAtt ImageSearch.DomainEndpoint
     handler: src/lambda/dynamoDb/elasticsearchSync.handler
     events:
       - stream:
@@ -237,15 +239,18 @@ resources:
         AccessPolicies:
           Version: '2012-10-17'
           Statement:
-            - 
-              Effect: Allow
+            - Effect: Allow
+              Principal:
+                AWS: !Sub arn:aws:sts::${AWS::AccountId}:assumed-role/${self:service}-${self:provider.stage}-${self:provider.region}-lambdaRole/serverless-udagram-app-${self:provider.stage}-SyncWithElasticsearch
+              Action: es:ESHttp*
+              Resource: !Sub 'arn:aws:es:${self:provider.region}:${AWS::AccountId}:domain/images-search-${self:provider.stage}/*'
+            - Effect: Allow
               Principal:
                 AWS: '*'
-              Action:
-                - 'es:ESHttp*'
+              Action: es:ESHttp*
               Condition:
                 IpAddress:
-                  'aws:SourceIp':
+                  aws:SourceIp:
                     - '197.210.64.255/32'
               Resource: !Sub 'arn:aws:es:${self:provider.region}:${AWS::AccountId}:domain/images-search-${self:provider.stage}/*'
 
