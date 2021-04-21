@@ -25,6 +25,7 @@ provider:
     IMAGE_ID_INDEX: ImageIdIndex
     IMAGES_S3_BUCKET: odina-serverless-udagram-images-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
+    THUMBNAILS_S3_BUCKET: odina-serverless-udagram-thumbnails-${self:provider.stage}
   iam:
     role:
       statements:
@@ -48,6 +49,10 @@ provider:
             - s3:PutObject
             - s3:GetObject
           Resource: arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+          Resource: arn:aws:s3:::${self:provider.environment.THUMBNAILS_S3_BUCKET}/*
         - Effect: Allow
           Action:
             - dynamodb:Scan
@@ -138,6 +143,18 @@ functions:
       - stream:
           type: dynamodb
           arn: !GetAtt ImagesDynamoDBTable.StreamArn
+  ResizeImage:
+    handler: src/lambda/s3/resizeImage.handler
+    events:
+      - sns:
+          arn:
+            Fn::Join:
+              - ':'
+              - - arn:aws:sns
+                - Ref: AWS::Region
+                - Ref: AWS::AccountId
+                - ${self:custom.topicName}
+          topicName: ${self:custom.topicName}
 
 resources:
   Resources:
@@ -200,6 +217,24 @@ resources:
                 - DELETE
                 - HEAD
               MaxAge: 3000
+    ThumbnailsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:provider.environment.THUMBNAILS_S3_BUCKET}
+        CorsConfiguration:
+          CorsRules:
+            -
+              AllowedOrigins:
+                - '*'
+              AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - PUT
+                - POST
+                - DELETE
+                - HEAD
+              MaxAge: 3000
     SendUploadNotificationsPermission:
       Type: AWS::Lambda::Permission
       Properties:
@@ -221,6 +256,21 @@ resources:
               Action: 's3:GetObject'
               Resource: 'arn:aws:s3:::${self:provider.environment.IMAGES_S3_BUCKET}/*'
         Bucket: !Ref AttachmentsBucket
+    ThumbailsBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        PolicyDocument:
+          Id: MyPolicy
+          Version: "2012-10-17"
+          Statement:
+            - Sid: PublicReadWriteForGetBucketObjects
+              Effect: Allow
+              Principal: '*'
+              Action:
+                - 's3:PutObject'
+                - 's3:GetObject'
+              Resource: 'arn:aws:s3:::${self:provider.environment.THUMBNAILS_S3_BUCKET}/*'
+        Bucket: !Ref ThumbnailsBucket
     WebsocketConnectionsDynamoDBTable:
       Type: AWS::DynamoDB::Table
       Properties:

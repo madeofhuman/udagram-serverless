@@ -12,6 +12,7 @@
   "dependencies": {
     "elasticsearch": "^15.4.1",
     "http-aws-es": "^6.0.0",
+    "jimp": "^0.16.1",
     "source-map-support": "^0.5.19",
     "uuid": "^8.3.2"
   },
