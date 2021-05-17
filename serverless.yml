@@ -135,14 +135,14 @@ functions:
     events:
       - websocket:
           route: $disconnect
-  SyncWithElasticsearch:
-    environment:
-      ES_ENDPOINT: !GetAtt ImageSearch.DomainEndpoint
-    handler: src/lambda/dynamoDb/elasticsearchSync.handler
-    events:
-      - stream:
-          type: dynamodb
-          arn: !GetAtt ImagesDynamoDBTable.StreamArn
+  # SyncWithElasticsearch:
+  #   environment:
+  #     ES_ENDPOINT: !GetAtt ImageSearch.DomainEndpoint
+  #   handler: src/lambda/dynamoDb/elasticsearchSync.handler
+  #   events:
+  #     - stream:
+  #         type: dynamodb
+  #         arn: !GetAtt ImagesDynamoDBTable.StreamArn
   ResizeImage:
     handler: src/lambda/s3/resizeImage.handler
     events:
@@ -282,38 +282,38 @@ resources:
             KeyType: HASH
         BillingMode: PAY_PER_REQUEST
         TableName: ${self:provider.environment.CONNECTIONS_TABLE}
-    ImageSearch:
-      Type: AWS::Elasticsearch::Domain
-      Properties:
-        ElasticsearchVersion: '6.3'
-        DomainName: images-search-${self:provider.stage}
-        ElasticsearchClusterConfig:
-          DedicatedMasterEnabled: false
-          InstanceCount: '1'
-          ZoneAwarenessEnabled: false
-          InstanceType: t2.small.elasticsearch
-        EBSOptions:
-          EBSEnabled: true
-          Iops: 0
-          VolumeSize: 10
-          VolumeType: 'gp2'
-        AccessPolicies:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Principal:
-                AWS: !Sub arn:aws:sts::${AWS::AccountId}:assumed-role/${self:service}-${self:provider.stage}-${self:provider.region}-lambdaRole/serverless-udagram-app-${self:provider.stage}-SyncWithElasticsearch
-              Action: es:ESHttp*
-              Resource: !Sub 'arn:aws:es:${self:provider.region}:${AWS::AccountId}:domain/images-search-${self:provider.stage}/*'
-            - Effect: Allow
-              Principal:
-                AWS: '*'
-              Action: es:ESHttp*
-              Condition:
-                IpAddress:
-                  aws:SourceIp:
-                    - '197.210.64.255/32'
-              Resource: !Sub 'arn:aws:es:${self:provider.region}:${AWS::AccountId}:domain/images-search-${self:provider.stage}/*'
+    # ImageSearch:
+    #   Type: AWS::Elasticsearch::Domain
+    #   Properties:
+    #     ElasticsearchVersion: '6.3'
+    #     DomainName: images-search-${self:provider.stage}
+    #     ElasticsearchClusterConfig:
+    #       DedicatedMasterEnabled: false
+    #       InstanceCount: '1'
+    #       ZoneAwarenessEnabled: false
+    #       InstanceType: t2.small.elasticsearch
+    #     EBSOptions:
+    #       EBSEnabled: true
+    #       Iops: 0
+    #       VolumeSize: 10
+    #       VolumeType: 'gp2'
+    #     AccessPolicies:
+    #       Version: '2012-10-17'
+    #       Statement:
+    #         - Effect: Allow
+    #           Principal:
+    #             AWS: !Sub arn:aws:sts::${AWS::AccountId}:assumed-role/${self:service}-${self:provider.stage}-${self:provider.region}-lambdaRole/serverless-udagram-app-${self:provider.stage}-SyncWithElasticsearch
+    #           Action: es:ESHttp*
+    #           Resource: !Sub 'arn:aws:es:${self:provider.region}:${AWS::AccountId}:domain/images-search-${self:provider.stage}/*'
+    #         - Effect: Allow
+    #           Principal:
+    #             AWS: '*'
+    #           Action: es:ESHttp*
+    #           Condition:
+    #             IpAddress:
+    #               aws:SourceIp:
+    #                 - '197.210.64.255/32'
+    #           Resource: !Sub 'arn:aws:es:${self:provider.region}:${AWS::AccountId}:domain/images-search-${self:provider.stage}/*'
     ImageTopic:
       Type: AWS::SNS::Topic
       Properties:
