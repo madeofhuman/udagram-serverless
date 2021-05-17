@@ -3,6 +3,7 @@ service: serverless-udagram-app
 plugins:
   - serverless-webpack
   - serverless-offline
+  - serverless-dynamodb-local
 
 package:
   individually: true
@@ -11,6 +12,15 @@ custom:
   webpack:
     includeModules: true
   topicName: imagesTopic-${self:provider.stage}
+  serverless-offline:
+    port: 3003
+  dynamodb:
+    start:
+      port: 8000
+      inMemory: true
+      migrate: true
+    stages:
+      - dev
 
 provider:
   name: aws
